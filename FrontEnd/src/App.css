@@ -1,0 +1,198 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-container {
+  display: flex;
+}
+
+.app-container.with-sidebar {
+  position: relative;
+  min-height: calc(100vh - 60px); /* Trừ đi chiều cao của Navbar nếu có */
+}
+
+.content-container {
+  flex: 1;
+  padding: 20px;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* When navbar is hidden, ensure content takes full height */
+.content-container.full-height {
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  background: var(--bg-light-purple, #f0f2fd); /* Using CSS variable with fallback */
+  overflow-x: hidden;
+}
+
+/* Adjust content when sidebar is present */
+.content-with-sidebar {
+  padding: 2rem;
+  background: var(--bg-light-purple, #f0f2fd); /* Using CSS variable with fallback */
+  transition: none;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Content container for sidebar pages */
+.content-container.content-with-sidebar.sidebar-collapsed {
+  transition: none;
+}
+
+/* Styled content container for sidebar pages */
+.content-with-sidebar > * {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Common section styles for sidebar pages */
+.content-with-sidebar section {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+  margin-bottom: 2rem;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.content-with-sidebar h1 {
+  font-size: 2.5rem;
+  color: #1e3a8a;
+  margin-bottom: 1.5rem;
+}
+
+.content-with-sidebar h2 {
+  font-size: 2rem;
+  color: #1e3a8a;
+  margin-bottom: 1.5rem;
+}
+
+/* Page wrapper for consistent styling across sidebar pages */
+.page-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  position: relative;
+}
+
+/* Hide dashboard-specific layout when in App layout */
+.page-wrapper .dashboard-layout {
+  display: block;
+  background: none;
+}
+
+.page-wrapper .main-container {
+  margin-left: 0;
+  width: 100%;
+}
+
+.page-wrapper .main-content {
+  padding: 0;
+}
+
+/* Fix the app container to properly handle sidebar */
+.app-container.with-sidebar {
+  position: relative;
+}
+
+/* Prevent content from being hidden under the sidebar */
+.content-container section, 
+.content-container .page-wrapper {
+  z-index: 100;
+  position: relative;
+}
+
+/* Improve form elements in health declaration page */
+.content-with-sidebar input,
+.content-with-sidebar select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+}
+
+/* Additional styles for health declaration form fields */
+.content-with-sidebar input[type="text"],
+.content-with-sidebar input[type="date"],
+.content-with-sidebar select {
+  height: 42px;
+  margin-bottom: 1rem;
+}
+
+/* Ensure white background on forms */
+.content-with-sidebar form {
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+/* Custom Action Buttons Styling */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 12px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.action-button i, 
+.action-button svg {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+/* Excel Export Button - Green */
+.btn-excel {
+  background-color: #1D6F42; /* Excel green */
+  color: white;
+}
+
+.btn-excel:hover {
+  background-color: #165b35;
+}
+
+/* Import List Button - Blue */
+.btn-import {
+  background-color: #2563EB; /* Bright blue */
+  color: white;
+}
+
+.btn-import:hover {
+  background-color: #1E40AF;
+}
+
+/* Form Action Buttons Container */
+.form-actions {
+  display: flex;
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+}
+
+@media screen and (min-width: 1200px) {
+  .content-with-sidebar section {
+    padding: 2.5rem;
+  }
+}

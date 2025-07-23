@@ -1,0 +1,31 @@
+.send-medicine-container {
+  padding: 20px 0;
+}
+
+.send-medicine-container h1 {
+  color: #333;
+  font-weight: 600;
+}
+
+.send-medicine-container .card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 20px;
+}
+
+/* Modal backdrop styling */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Table hover effect */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badge styling */
+.badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+}

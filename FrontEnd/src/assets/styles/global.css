@@ -1,0 +1,227 @@
+/* HealthConnect Theme Variables */
+:root {
+  --primary-blue: #005eb8;
+  --secondary-blue: #3b82f6;
+  --light-blue: #dbeafe;
+  --accent-orange: #f59e0b;
+  --success-green: #10b981;
+  --danger-red: #ef4444;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --card-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+  --hover-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f8fb;
+  margin: 0;
+  min-height: 100vh;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* Common Components */
+.card {
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  border: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--hover-shadow);
+}
+
+.btn-primary {
+  background-color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.btn-primary:hover {
+  background-color: #0056a4;
+  border-color: #0056a4;
+}
+
+.btn-outline-primary {
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-blue);
+  color: var(--white);
+}
+
+/* Specific Component Styling */
+.navbar {
+  background: var(--white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1.5rem;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  color: var(--primary-blue) !important;
+}
+
+.nav-link {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+  margin: 0 0.5rem;
+  transition: color 0.2s, border-bottom 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--primary-blue) !important;
+  border-bottom: 2px solid var(--primary-blue);
+}
+
+.nav-link.active {
+  color: var(--primary-blue) !important;
+  border-bottom: 2px solid var(--primary-blue);
+}
+
+.footer {
+  background: #f3e9dd;
+  color: var(--text-primary);
+  padding: 3rem 0;
+  margin-top: 3rem;
+}
+
+/* Hero Section */
+.hero-section {
+  background: url('https://cdn.thuvienphapluat.vn/uploads/tintuc/2024/01/20/thu-tuc-y-te-moi.png') center/cover no-repeat;
+  padding: 6rem 0;
+  color: var(--white);
+  position: relative;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+/* Dashboard elements */
+.dashboard-stat-card {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--hover-shadow);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.stat-primary {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--primary-blue);
+}
+
+.stat-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-green);
+}
+
+.stat-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--accent-orange);
+}
+
+.stat-info {
+  background-color: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Form elements */
+.form-control:focus, 
+.form-select:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 0.25rem rgba(0, 94, 184, 0.25);
+}
+
+/* Custom badges */
+.badge.custom-badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+/* Login page styling */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+}
+
+.login-form-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  padding: 2rem;
+}
+
+.login-brand-panel {
+  width: 420px;
+  background: var(--primary-blue);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 3rem;
+}
