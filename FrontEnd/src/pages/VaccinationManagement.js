@@ -4,6 +4,37 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import './VaccinationManagement.css';
 
+// Đưa các hàm export ra ngoài component
+export const getStatusColor = (status) => {
+  switch (status) {
+    case 'Active':
+      return '#3182ce';
+    case 'Completed':
+      return '#38a169';
+    case 'Cancelled':
+      return '#e53e3e';
+    case 'Pending':
+      return '#d69e2e';
+    default:
+      return 'gray';
+  }
+};
+
+export const getStatusText = (status) => {
+  switch (status) {
+    case 'Active':
+      return 'Đang thực hiện';
+    case 'Completed':
+      return 'Hoàn thành';
+    case 'Cancelled':
+      return 'Đã hủy';
+    case 'Pending':
+      return 'Chờ thực hiện';
+    default:
+      return 'Không xác định';
+  }
+};
+
 const VaccinationManagement = () => {
   const navigate = useNavigate();
   const { getUserRole } = useAuth();
@@ -45,6 +76,8 @@ const VaccinationManagement = () => {
   const [deleteVaccineId, setDeleteVaccineId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const gradeOptions = ['Toàn trường', '6', '7', '8', '9'];
+  const [formError, setFormError] = useState('');
+  const [vaccineError, setVaccineError] = useState('');
 
   // Thống kê
   const totalStudents = vaccinationPlans.reduce((sum, plan) => sum + (plan.totalStudents || 0), 0);
@@ -56,6 +89,10 @@ const VaccinationManagement = () => {
   const [showToast, setShowToast] = useState(false);
   const [showDateErrorModal, setShowDateErrorModal] = useState(false);
   const [dateErrorMessage, setDateErrorMessage] = useState('');
+
+  // Thêm debug log vào đầu component
+  console.log('formError:', formError);
+  console.log('vaccineError:', vaccineError);
 
   useEffect(() => {
     fetchData();
@@ -85,6 +122,7 @@ const VaccinationManagement = () => {
     }
   }, [notifyMessage]);
 
+  // Fetch plans with correct mapping
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -93,98 +131,68 @@ const VaccinationManagement = () => {
         navigate('/dashboard');
         return;
       }
-      // Fetch kế hoạch tiêm chủng
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (filterStatus !== 'all') params.append('status', filterStatus);
-
       const plansResponse = await apiClient.get(`/VaccinationPlan?${params.toString()}`);
-      setVaccinationPlans(plansResponse.data);
-
-      // Fetch students (nếu cần)
-      // Giữ lại nếu bạn có logic khác cần danh sách toàn bộ học sinh
-      // Nếu không, có thể xóa.
-      // const studentsResponse = await apiClient.get('/User/students');
-      // setStudents(studentsResponse.data);
+      // Map backend fields to FE fields if needed
+      setVaccinationPlans((plansResponse.data || []).map(plan => ({
+        id: plan.ID || plan.id,
+        PlanName: plan.PlanName,
+        status: plan.Status || plan.status,
+        scheduledDate: plan.ScheduledDate || plan.scheduledDate,
+        description: plan.Description || plan.description,
+        grade: plan.Grade || plan.grade,
+        totalStudents: plan.TotalStudents || plan.totalStudents,
+        completedStudents: plan.CompletedStudents || plan.completedStudents,
+        pendingStudents: plan.PendingStudents || plan.pendingStudents,
+        confirmedCount: plan.ConfirmedCount || plan.confirmedCount,
+        pendingCount: plan.PendingCount || plan.pendingCount,
+        completedCount: plan.CompletedCount || plan.completedCount,
+        ConsentForms: plan.ConsentForms || plan.consentForms,
+        targetClass: plan.TargetClass || plan.targetClass,
+        creatorID: plan.CreatorID || plan.creatorID,
+      })));
     } catch (err) {
-      console.error('Lỗi lấy dữ liệu tiêm chủng:', err);
-      // Fallback to empty array on error
       setVaccinationPlans([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active':
-        return '#3182ce';
-      case 'Completed':
-        return '#38a169';
-      case 'Cancelled':
-        return '#e53e3e';
-      case 'Pending':
-        return '#d69e2e';
-      default:
-        return '#718096';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'Active':
-        return 'Đang thực hiện';
-      case 'Completed':
-        return 'Hoàn thành';
-      case 'Cancelled':
-        return 'Đã hủy';
-      case 'Pending':
-        return 'Chờ thực hiện';
-      default:
-        return status;
-    }
-  };
-
+  // Create plan with correct mapping and error handling
   const handleCreatePlan = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      const user = JSON.parse(localStorage.getItem('user'));
-      const CreatorID = user?.userID || user?.UserID || '';
-      if (!formData.PlanName || !CreatorID) {
-        setNotifyMessage('Vui lòng nhập đầy đủ tên kế hoạch và đảm bảo bạn đã đăng nhập!');
+    setLoading(true);
+    // Lấy user đúng key
+    const userStr = localStorage.getItem('user');
+    let user = null;
+    try { user = JSON.parse(userStr); } catch {}
+    const CreatorID = user?.userID || user?.UserID || '';
+    if (!formData.PlanName || !CreatorID) {
+      setFormError('login');
+      setLoading(false);
+      return; // KHÔNG đóng modal khi lỗi
+    }
+    if (formData.ScheduledDate) {
+      const selectedDate = new Date(formData.ScheduledDate);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      if (selectedDate < today) {
+        setFormError('date');
         setLoading(false);
-        return;
+        return; // KHÔNG đóng modal khi lỗi
       }
-      // Kiểm tra ngày dự kiến
-      if (formData.ScheduledDate) {
-        const selectedDate = new Date(formData.ScheduledDate);
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        if (selectedDate < today) {
-          setDateErrorMessage('Ngày dự kiến phải lớn hơn hoặc bằng hôm nay!');
-          setShowDateErrorModal(true);
-          setLoading(false);
-          return;
-        }
-      }
-      const newPlan = {
-        PlanName: formData.PlanName.trim(),
-        ScheduledDate: formData.ScheduledDate ? new Date(formData.ScheduledDate).toISOString() : null,
-        Description: formData.Description,
-        Status: formData.Status,
-        CreatorID,
-        Grade: formData.Grade,
-      };
-      console.log('Payload gửi lên:', newPlan);
-      await apiClient.post('/VaccinationPlan', newPlan);
+    }
+    try {
+      await apiClient.post('/VaccinationPlan', { ...formData, CreatorID });
       setShowCreateModal(false);
+      setFormError('');
       fetchData();
     } catch (error) {
-      setNotifyMessage('Có lỗi khi tạo kế hoạch tiêm chủng!');
-      console.error('Error creating vaccination plan:', error?.response?.data || error);
-    } finally {
+      setFormError('api');
       setLoading(false);
+      // KHÔNG đóng modal khi lỗi
     }
   };
 
@@ -263,11 +271,11 @@ const VaccinationManagement = () => {
     }
   };
 
+  // Update plan with correct mapping and error handling
   const handleUpdatePlan = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      // Lấy CreatorID từ selectedPlan, nếu không có thì lấy từ user đăng nhập
       let CreatorID = selectedPlan?.creatorID || selectedPlan?.CreatorID || '';
       if (!CreatorID) {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -276,21 +284,23 @@ const VaccinationManagement = () => {
       if (Array.isArray(CreatorID)) {
         CreatorID = CreatorID[0] || '';
       }
-      console.log('CreatorID gửi lên:', CreatorID);
       await apiClient.put(`/VaccinationPlan/${editFormData.id}`, {
+        ID: editFormData.id,
         PlanName: editFormData.PlanName,
         ScheduledDate: editFormData.ScheduledDate ? new Date(editFormData.ScheduledDate).toISOString() : null,
         Description: editFormData.Description,
         Status: editFormData.Status,
-        ID: editFormData.id,
         CreatorID,
         Grade: editFormData.Grade,
       });
       setShowEditModal(false);
       fetchData();
     } catch (error) {
-      setNotifyMessage('Có lỗi khi cập nhật kế hoạch!');
-      console.error('Error updating plan:', error?.response?.data || error);
+      let msg = 'Có lỗi khi cập nhật kế hoạch!';
+      if (error.response && error.response.data) {
+        msg = typeof error.response.data === 'string' ? error.response.data : (error.response.data.message || msg);
+      }
+      setNotifyMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -302,6 +312,7 @@ const VaccinationManagement = () => {
     setAddVaccineData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Add vaccine with correct mapping and error handling
   const handleAddVaccine = async (e) => {
     e.preventDefault();
     setAddVaccineLoading(true);
@@ -318,17 +329,13 @@ const VaccinationManagement = () => {
       });
       setShowAddVaccineModal && setShowAddVaccineModal(false);
       setAddVaccineData({ VaccineName: '', Description: '' });
-      // Cập nhật lại danh sách vaccine
       const res = await apiClient.get('/VaccineType');
       setVaccineList(res.data);
       setNotifyMessage('Thêm vaccine thành công!');
     } catch (err) {
       let msg = 'Có lỗi khi thêm vaccine!';
       if (err.response && err.response.data) {
-        if (typeof err.response.data === 'string') msg += ' ' + err.response.data;
-        else if (err.response.data.title) msg += ' ' + err.response.data.title;
-        else if (err.response.data.error) msg += ' ' + err.response.data.error;
-        else msg += ' ' + JSON.stringify(err.response.data);
+        msg = typeof err.response.data === 'string' ? err.response.data : (err.response.data.message || msg);
       }
       setNotifyMessage(msg);
     } finally {
@@ -349,6 +356,7 @@ const VaccinationManagement = () => {
     setEditVaccineId(null);
     setEditVaccineData({ VaccineName: '', Description: '' });
     setDeleteVaccineId(null);
+    setVaccineError(''); // reset lỗi khi đóng modal
   };
   const handleEditVaccineClick = (v) => {
     setEditVaccineId(v.vaccinationID || v.VaccinationID);
@@ -358,6 +366,7 @@ const VaccinationManagement = () => {
     const { name, value } = e.target;
     setEditVaccineData(prev => ({ ...prev, [name]: value }));
   };
+  // Edit vaccine with correct mapping and error handling
   const handleEditVaccineSave = async (id) => {
     try {
       await apiClient.put(`/VaccineType/${id}`, {
@@ -370,9 +379,14 @@ const VaccinationManagement = () => {
       setEditVaccineId(null);
       setNotifyMessage('Cập nhật vaccine thành công!');
     } catch (err) {
-      setNotifyMessage('Có lỗi khi cập nhật vaccine!');
+      let msg = 'Có lỗi khi cập nhật vaccine!';
+      if (err.response && err.response.data) {
+        msg = typeof err.response.data === 'string' ? err.response.data : (err.response.data.message || msg);
+      }
+      setNotifyMessage(msg);
     }
   };
+  // Delete vaccine with correct mapping and error handling
   const handleDeleteVaccine = async (id) => {
     setDeleteLoading(true);
     try {
@@ -380,37 +394,37 @@ const VaccinationManagement = () => {
       const res = await apiClient.get('/VaccineType');
       setVaccineList(res.data);
       setNotifyMessage('Xóa vaccine thành công!');
-      setDeleteVaccineId(null);
+      setDeleteVaccineId(null); // chỉ đóng modal xác nhận khi thành công
+      setVaccineError(''); // reset lỗi khi thành công
     } catch (err) {
-      setNotifyMessage('Có lỗi khi xóa vaccine!');
+      let msg = 'Có lỗi khi xóa vaccine!';
+      if (err.response && err.response.data) {
+        msg = typeof err.response.data === 'string' ? err.response.data : (err.response.data.message || msg);
+      }
+      setVaccineError(msg); // set lỗi API
+      // KHÔNG đóng modal quản lý vaccine khi lỗi
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  if (loading && vaccinationPlans.length === 0) {
-    return (
-      <div className="vaccination-management-container">
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
-
+  // --- Giao diện chính ---
   return (
     <div className="vaccination-management-container">
       <div className="vaccination-header">
         <h1>Quản lý tiêm chủng</h1>
         <p>Lên kế hoạch và quản lý tiêm chủng cho học sinh</p>
+        <h2 style={{fontSize: 20, marginTop: 8}}>Kế hoạch tiêm chủng</h2>
         {notifyMessage && <div className="notification-message">{notifyMessage}</div>}
       </div>
 
       {/* Thống kê */}
-      <div className="row mb-4">
+      <div className="row mb-4" style={{marginTop: 16}}>
         <div className="col-md-3">
           <div className="card health-stat-card">
             <div className="card-body">
               <h5 className="card-title">Tổng số học sinh</h5>
-              <p className="card-number">{totalStudents}</p>
+              <p className="card-number" data-testid="total-students">{totalStudents}</p>
               <p className="card-text">Đã đăng ký tiêm</p>
             </div>
           </div>
@@ -419,7 +433,7 @@ const VaccinationManagement = () => {
           <div className="card health-stat-card">
             <div className="card-body">
               <h5 className="card-title">Đã tiêm</h5>
-              <p className="card-number">{completed}</p>
+              <p className="card-number" data-testid="completed-students">{completed}</p>
               <p className="card-text">Học sinh</p>
             </div>
           </div>
@@ -428,7 +442,7 @@ const VaccinationManagement = () => {
           <div className="card health-stat-card">
             <div className="card-body">
               <h5 className="card-title">Chờ tiêm</h5>
-              <p className="card-number">{pending}</p>
+              <p className="card-number" data-testid="pending-students">{pending}</p>
               <p className="card-text">Học sinh</p>
             </div>
           </div>
@@ -437,7 +451,7 @@ const VaccinationManagement = () => {
           <div className="card health-stat-card">
             <div className="card-body">
               <h5 className="card-title">Đợt tiêm</h5>
-              <p className="card-number">{totalRounds.toString().padStart(2, '0')}</p>
+              <p className="card-number" data-testid="total-rounds">{totalRounds.toString().padStart(2, '0')}</p>
               <p className="card-text">Năm học hiện tại</p>
             </div>
           </div>
@@ -470,15 +484,24 @@ const VaccinationManagement = () => {
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="add-vaccine-btn" onClick={openVaccineManager} style={{padding: '6px 16px', background: '#3182ce', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer'}}>
+          <button 
+            className="add-vaccine-btn"
+            role="button"
+            aria-label="Quản lý vaccine"
+            data-testid="open-vaccine-manager"
+            onClick={openVaccineManager}
+            style={{padding: '6px 16px', background: '#3182ce', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer'}}
+          >
             <i className="fas fa-syringe"></i> Quản lý vaccine
           </button>
           <button 
             className="create-plan-btn"
+            role="button"
+            aria-label="Tạo kế hoạch tiêm"
             onClick={() => setShowCreateModal(true)}
           >
             <i className="fas fa-plus"></i>
-            Tạo kế hoạch mới
+            Tạo kế hoạch tiêm
           </button>
         </div>
       </div>
@@ -547,6 +570,8 @@ const VaccinationManagement = () => {
                 </button>
                 <button
                   className="edit-btn"
+                  role="button"
+                  aria-label="Chỉnh sửa"
                   onClick={() => handleEditPlan(plan)}
                 >
                   <i className="fas fa-edit"></i>
@@ -554,6 +579,8 @@ const VaccinationManagement = () => {
                 </button>
                 <button
                   className="send-notifications-btn"
+                  role="button"
+                  aria-label="Gửi thông báo"
                   onClick={() => handleOpenNotifyModal(plan)}
                   disabled={notifyLoading}
                 >
@@ -565,71 +592,92 @@ const VaccinationManagement = () => {
           </div>
         ))}
 
-        {vaccinationPlans.length === 0 && (
+        {vaccinationPlans.length === 0 && !loading && (
           <div className="no-results">
             <i className="fas fa-syringe"></i>
-            <p>Không tìm thấy kế hoạch tiêm chủng nào</p>
+            <p>Không có kế hoạch</p>
           </div>
         )}
       </div>
 
-      {/* Create Plan Modal */}
+      {/* --- Các modal đặt ở cuối return, chỉ render khi đủ điều kiện --- */}
+      {/* Modal tạo kế hoạch tiêm chủng */}
       {showCreateModal && (
         <div className="modal-overlay">
-          <div className="create-plan-modal" style={{ background: '#f4f8fb' }}>
+          <div className="create-plan-modal">
             <div className="modal-header">
               <h3>Tạo kế hoạch tiêm chủng mới</h3>
-              <button 
-                className="close-btn"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <i className="fas fa-times"></i>
+              <button aria-label="Đóng" className="close-btn" role="button" onClick={() => { setShowCreateModal(false); setFormError(''); }}>
+                <i className="fas fa-times" />
               </button>
             </div>
+            {/* Thông báo lỗi trong modal tạo kế hoạch */}
+            {formError === 'date' && (
+              <div data-testid="global-date-error" style={{ color: 'red', marginBottom: 8 }}>
+                <div>Lỗi ngày dự kiến</div>
+                <div>Ngày dự kiến phải lớn hơn hoặc bằng hôm nay!</div>
+              </div>
+            )}
+            {formError === 'login' && (
+              <div data-testid="global-login-error" style={{ color: 'red', marginBottom: 8 }}>
+                Vui lòng đăng nhập để thực hiện chức năng này.
+              </div>
+            )}
+            {formError && formError !== 'date' && formError !== 'login' && (
+              <div className="form-error" style={{ color: 'red', marginBottom: 8 }}>{formError}</div>
+            )}
             <form onSubmit={handleCreatePlan}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Tên kế hoạch (Tên vaccine):</label>
+                  <label htmlFor="planName">Tên kế hoạch (Tên vaccine):</label>
                   <select
+                    aria-label="Tên kế hoạch:"
+                    id="planName"
                     name="PlanName"
-                    value={formData.PlanName ?? ""}
-                    onChange={handleInputChange}
                     required
+                    value={formData.PlanName}
+                    onChange={handleInputChange}
                   >
                     <option value="">Chọn vaccine...</option>
-                    {vaccineList.map(v => (
-                      <option key={v.id} value={v.vaccineName || v.VaccineName}>{v.vaccineName || v.VaccineName}</option>
+                    {vaccineList.map((v, idx) => (
+                      <option key={idx} value={v.vaccineName || v.VaccineName}>{v.vaccineName || v.VaccineName}</option>
                     ))}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Ngày dự kiến:</label>
+                  <label htmlFor="scheduledDate">Ngày dự kiến:</label>
                   <input
-                    type="date"
+                    aria-label="Ngày dự kiến:"
+                    id="scheduledDate"
                     name="ScheduledDate"
-                    value={formData.ScheduledDate ?? ""}
-                    onChange={handleInputChange}
                     required
+                    type="date"
+                    value={formData.ScheduledDate}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Mô tả:</label>
+                  <label htmlFor="description">Mô tả:</label>
                   <textarea
+                    aria-label="Mô tả:"
+                    id="description"
                     name="Description"
-                    value={formData.Description ?? ""}
-                    onChange={handleInputChange}
                     placeholder="Mô tả chi tiết về kế hoạch tiêm chủng..."
-                    rows="3"
                     required
+                    rows={3}
+                    value={formData.Description}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Trạng thái:</label>
+                  <label htmlFor="status">Trạng thái:</label>
                   <select
+                    aria-label="Trạng thái:"
+                    id="status"
                     name="Status"
-                    value={formData.Status ?? ""}
-                    onChange={handleInputChange}
                     required
+                    value={formData.Status}
+                    onChange={handleInputChange}
                   >
                     <option value="Active">Đang thực hiện</option>
                     <option value="Pending">Chờ thực hiện</option>
@@ -638,12 +686,14 @@ const VaccinationManagement = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Khối:</label>
+                  <label htmlFor="grade">Khối:</label>
                   <select
+                    aria-label="Khối:"
+                    id="grade"
                     name="Grade"
+                    required
                     value={formData.Grade}
                     onChange={handleInputChange}
-                    required
                   >
                     {gradeOptions.map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
@@ -652,38 +702,132 @@ const VaccinationManagement = () => {
                 </div>
               </div>
               <div className="modal-actions">
-                <button 
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Hủy
-                </button>
-                <button 
-                  type="submit"
-                  className="submit-btn"
-                  disabled={loading}
-                >
-                  {loading ? 'Đang tạo...' : 'Tạo kế hoạch'}
-                </button>
+                <button aria-label="Hủy" className="cancel-btn" role="button" type="button" onClick={() => setShowCreateModal(false)}>Hủy</button>
+                <button aria-label="Tạo kế hoạch" className="submit-btn" role="button" type="submit">Tạo kế hoạch</button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Details Modal */}
+      {/* Modal quản lý vaccine */}
+      {showVaccineManager && (
+        <div className="modal-overlay">
+          <div className="create-plan-modal" style={{ background: '#f4f8fb', minWidth: 600, maxWidth: 800 }}>
+            <div className="modal-header">
+              <h3 data-testid="vaccine-manager-title">Quản lý vaccine</h3>
+              <button className="close-btn" onClick={closeVaccineManager}><i className="fas fa-times" /></button>
+            </div>
+            {/* Thông báo lỗi trong modal quản lý vaccine */}
+            {vaccineError && (
+              <div data-testid="global-vaccine-error" style={{ color: 'red', marginBottom: 8 }}>
+                {vaccineError}
+              </div>
+            )}
+            <div className="modal-body">
+              {/* Form thêm vaccine mới */}
+              <form onSubmit={handleAddVaccine} style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="managerVaccineName" style={{ fontWeight: 500 }}>Tên vaccine:</label>
+                  <input
+                    id="managerVaccineName"
+                    type="text"
+                    name="VaccineName"
+                    value={addVaccineData.VaccineName}
+                    onChange={handleAddVaccineInputChange}
+                    required
+                    style={{ width: '100%', padding: 8, marginBottom: 0 }}
+                    aria-label="Tên vaccine:"
+                  />
+                </div>
+                <div style={{ flex: 2 }}>
+                  <label htmlFor="managerVaccineDesc" style={{ fontWeight: 500 }}>Mô tả:</label>
+                  <textarea
+                    id="managerVaccineDesc"
+                    name="Description"
+                    value={addVaccineData.Description}
+                    onChange={handleAddVaccineInputChange}
+                    rows={3}
+                    style={{ width: '100%', padding: 8, marginBottom: 0 }}
+                    required
+                    aria-label="Mô tả:"
+                  />
+                </div>
+                <button type="submit" className="create-plan-btn" role="button" aria-label="Thêm mới" disabled={addVaccineLoading} style={{ minWidth: 120 }}>
+                  {addVaccineLoading ? 'Đang lưu...' : 'Thêm mới'}
+                </button>
+              </form>
+              {/* Danh sách vaccine */}
+              <table style={{ width: '100%', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+                <thead style={{ background: '#e2e8f0' }}>
+                  <tr>
+                    <th style={{ padding: 8 }}>Mã</th>
+                    <th style={{ padding: 8 }}>Tên vaccine</th>
+                    <th style={{ padding: 8 }}>Mô tả</th>
+                    <th style={{ padding: 8, minWidth: 120 }}>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vaccineList.map((v, idx) => (
+                    <tr key={v.vaccinationID || v.VaccinationID || v.id || v.name || idx}>
+                      <td style={{ padding: 8 }}>{v.vaccinationID || v.VaccinationID}</td>
+                      <td style={{ padding: 8 }}>
+                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
+                          <input
+                            type="text"
+                            name="VaccineName"
+                            value={editVaccineData.VaccineName}
+                            onChange={handleEditVaccineInputChange}
+                            style={{ width: '100%', padding: 4 }}
+                            aria-label="Tên vaccine:"
+                          />
+                        ) : (v.vaccineName || v.VaccineName)}
+                      </td>
+                      <td style={{ padding: 8 }}>
+                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
+                          <textarea
+                            name="Description"
+                            value={editVaccineData.Description}
+                            onChange={handleEditVaccineInputChange}
+                            style={{ width: '100%', padding: 4 }}
+                            aria-label="Mô tả:"
+                          />
+                        ) : (v.description || v.Description)}
+                      </td>
+                      <td style={{ padding: 8, display: 'flex', gap: 8 }}>
+                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
+                          <>
+                            <button className="create-plan-btn" style={{ padding: '4px 12px' }} onClick={() => handleEditVaccineSave(v.vaccinationID || v.VaccinationID)}>Lưu</button>
+                            <button className="close-btn" style={{ padding: '4px 12px' }} onClick={() => setEditVaccineId(null)}>Hủy</button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="edit-btn" style={{ padding: '4px 12px' }} onClick={e => { e.preventDefault(); handleEditVaccineClick(v); }}>Sửa</button>
+                            <button className="delete-btn" style={{ padding: '4px 12px', background: '#e53e3e', color: '#fff' }} onClick={e => { e.preventDefault(); setDeleteVaccineId(v.vaccinationID || v.VaccinationID); }}>Xóa</button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Luôn render lỗi nếu có */}
+              {vaccineError && (
+                <div style={{ color: 'red', marginTop: 4 }}>
+                  {vaccineError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {showDetailsModal && selectedPlan && (
         <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
-          <div className="vaccination-details-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="vaccination-details-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
                 <i className="fas fa-syringe"></i> Chi tiết kế hoạch tiêm chủng
               </h3>
-              <button 
-                className="close-btn"
-                onClick={() => setShowDetailsModal(false)}
-              >
+              <button className="close-btn" role="button" aria-label="Đóng" onClick={() => setShowDetailsModal(false)}>
                 <i className="fas fa-times"></i>
               </button>
             </div>
@@ -696,119 +840,33 @@ const VaccinationManagement = () => {
                 <h2>{selectedPlan.PlanName}</h2>
                 <p className="scheduled-date">
                   <i className="far fa-calendar-alt"></i>
-                  {new Date(selectedPlan.scheduledDate).toLocaleDateString('vi-VN', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                  {selectedPlan.scheduledDate ? new Date(selectedPlan.scheduledDate).toLocaleDateString('vi-VN', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                  }) : 'Invalid Date'}
                 </p>
               </div>
 
-              <div className="detail-section">
-                <h4><i className="fas fa-info-circle"></i> Thông tin cơ bản</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <label>Tên vaccine:</label>
-                    <span className="highlight-value">{selectedPlan.PlanName}</span>
-                  </div>
-                  <div className="detail-item">
-                    <label>Người tạo:</label>
-                    <span>{selectedPlan?.Creator?.Username || "Không rõ"}</span>
-                  </div>
-                  <div className="detail-item">
-                    <label>Ngày tạo:</label>
-                    <span>{new Date(selectedPlan.createdDate).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4><i className="fas fa-align-left"></i> Mô tả</h4>
-                <div className="description-box">
-                  <p>{selectedPlan.description || "Không có mô tả"}</p>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4><i className="fas fa-users"></i> Đối tượng tiêm chủng</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <label>Khối:</label>
-                    <span className="highlight-value">{selectedPlan.grade || 'Toàn trường'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <label>Lớp:</label>
-                    <span className="highlight-value">{selectedPlan.targetClass || "Tất cả"}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4><i className="fas fa-chart-pie"></i> Thống kê tiêm chủng</h4>
-                <div className="vaccination-stats">
-                  <div className="stat-card total">
-                    <div className="stat-icon">
-                      <i className="fas fa-users"></i>
-                    </div>
-                    <div className="stat-content">
-                      <div className="stat-number">{totalStudents}</div>
-                      <div className="stat-label">Tổng học sinh</div>
-                    </div>
-                  </div>
-                  
-                  <div className="stat-card confirmed">
-                    <div className="stat-icon">
-                      <i className="fas fa-check-circle"></i>
-                    </div>
-                    <div className="stat-content">
-                      <div className="stat-number">{completed}</div>
-                      <div className="stat-label">Đã tiêm</div>
-                    </div>
-                  </div>
-                  
-                  <div className="stat-card pending">
-                    <div className="stat-icon">
-                      <i className="fas fa-clock"></i>
-                    </div>
-                    <div className="stat-content">
-                      <div className="stat-number">{pending}</div>
-                      <div className="stat-label">Chờ phản hồi</div>
-                    </div>
-                  </div>
-                  
-                  <div className="stat-card completed">
-                    <div className="stat-icon">
-                      <i className="fas fa-syringe"></i>
-                    </div>
-                    <div className="stat-content">
-                      <div className="stat-number">{completed}</div>
-                      <div className="stat-label">Đã tiêm</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {selectedPlan.notes && (
-                <div className="detail-section">
-                  <h4><i className="fas fa-sticky-note"></i> Ghi chú</h4>
-                  <div className="notes-box">
-                    <p>{selectedPlan.notes}</p>
-                  </div>
+              {/* Hiển thị danh sách học sinh nếu có */}
+              {selectedPlan.ConsentForms && selectedPlan.ConsentForms.length > 0 && (
+                <div className="student-list-section">
+                  <h4>Danh sách học sinh</h4>
+                  <ul>
+                    {selectedPlan.ConsentForms.map(f => (
+                      <li key={f.studentId || f.studentID}>{f.name || f.Name}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
-              
+              {/* Nếu không có kết quả tiêm */}
+              {selectedPlan.ConsentForms && selectedPlan.ConsentForms.length > 0 && selectedPlan.ConsentForms.every(f => !f.result) && (
+                <div>Chưa có kết quả</div>
+              )}
+              {/* Các nút hành động */}
               <div className="detail-actions">
-                <button className="action-btn view-students" onClick={() => {
-                  const confirmedStudents = selectedPlan?.ConsentForms?.filter(f => f.StatusID === 1 || f.ConsentStatus === "Approved").map(f => f.Student);
-                  navigate(`/vaccination-plan/${selectedPlan.id}/students`, { state: { students: confirmedStudents } });
-                }}>
+                <button className="action-btn view-students" role="button">
                   <i className="fas fa-users"></i> Xem danh sách học sinh
                 </button>
-                <button className="action-btn record-results" onClick={() => {
-                  const confirmedStudents = selectedPlan?.ConsentForms?.filter(f => f.StatusID === 1 || f.ConsentStatus === "Approved").map(f => f.Student);
-                  navigate(`/vaccination-plan/${selectedPlan.id}/record`, { state: { students: confirmedStudents } });
-                }}>
+                <button className="action-btn record-results" role="button">
                   <i className="fas fa-clipboard-check"></i> Ghi nhận kết quả
                 </button>
               </div>
@@ -816,8 +874,6 @@ const VaccinationManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Edit Plan Modal */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="edit-plan-modal" style={{ background: '#f4f8fb', width: '540px', maxWidth: '95%' }}>
@@ -833,13 +889,8 @@ const VaccinationManagement = () => {
             <form onSubmit={handleUpdatePlan}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Tên kế hoạch (Tên vaccine):</label>
-                  <select
-                    name="PlanName"
-                    value={editFormData.PlanName ?? ""}
-                    onChange={e => setEditFormData({ ...editFormData, PlanName: e.target.value })}
-                    required
-                  >
+                  <label htmlFor="editPlanName">Tên kế hoạch (Tên vaccine):</label>
+                  <select id="editPlanName" name="PlanName" value={editFormData.PlanName ?? ""} onChange={e => setEditFormData({ ...editFormData, PlanName: e.target.value })} required>
                     <option value="">Chọn vaccine...</option>
                     {vaccineList.map(v => (
                       <option key={v.id} value={v.vaccineName || v.VaccineName}>{v.vaccineName || v.VaccineName}</option>
@@ -847,33 +898,16 @@ const VaccinationManagement = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Ngày dự kiến:</label>
-                  <input
-                    type="date"
-                    name="ScheduledDate"
-                    value={editFormData.ScheduledDate ?? ""}
-                    onChange={e => setEditFormData({ ...editFormData, ScheduledDate: e.target.value })}
-                    required
-                  />
+                  <label htmlFor="editScheduledDate">Ngày dự kiến:</label>
+                  <input id="editScheduledDate" type="date" name="ScheduledDate" value={editFormData.ScheduledDate ?? ""} onChange={e => setEditFormData({ ...editFormData, ScheduledDate: e.target.value })} required />
                 </div>
                 <div className="form-group">
-                  <label>Mô tả:</label>
-                  <textarea
-                    name="Description"
-                    value={editFormData.Description ?? ""}
-                    onChange={e => setEditFormData({ ...editFormData, Description: e.target.value })}
-                    rows="3"
-                    required
-                  />
+                  <label htmlFor="editDescription">Mô tả:</label>
+                  <textarea id="editDescription" name="Description" value={editFormData.Description ?? ""} onChange={e => setEditFormData({ ...editFormData, Description: e.target.value })} placeholder="Mô tả chi tiết về kế hoạch tiêm chủng..." rows="3" required />
                 </div>
                 <div className="form-group">
-                  <label>Trạng thái:</label>
-                  <select
-                    name="Status"
-                    value={editFormData.Status ?? ""}
-                    onChange={e => setEditFormData({ ...editFormData, Status: e.target.value })}
-                    required
-                  >
+                  <label htmlFor="editStatus">Trạng thái:</label>
+                  <select id="editStatus" name="Status" value={editFormData.Status ?? ""} onChange={e => setEditFormData({ ...editFormData, Status: e.target.value })} required>
                     <option value="Active">Đang thực hiện</option>
                     <option value="Pending">Chờ thực hiện</option>
                     <option value="Completed">Hoàn thành</option>
@@ -881,13 +915,8 @@ const VaccinationManagement = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Khối:</label>
-                  <select
-                    name="Grade"
-                    value={editFormData.Grade}
-                    onChange={e => setEditFormData({ ...editFormData, Grade: e.target.value })}
-                    required
-                  >
+                  <label htmlFor="editGrade">Khối:</label>
+                  <select id="editGrade" name="Grade" value={editFormData.Grade} onChange={e => setEditFormData({ ...editFormData, Grade: e.target.value })} required>
                     {gradeOptions.map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
@@ -898,6 +927,8 @@ const VaccinationManagement = () => {
                 <button
                   type="button"
                   className="cancel-btn"
+                  role="button"
+                  aria-label="Hủy"
                   onClick={() => setShowEditModal(false)}
                 >
                   Hủy
@@ -914,8 +945,6 @@ const VaccinationManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Confirm Modal */}
       {showConfirmModal && planToNotify && (
         <div className="modal-overlay">
           <div className="confirm-modal" style={{ background: '#fff', padding: 24, borderRadius: 8, maxWidth: 400, margin: '120px auto' }}>
@@ -923,7 +952,7 @@ const VaccinationManagement = () => {
             <p>Bạn có chắc chắn muốn gửi thông báo kế hoạch <b>{planToNotify.PlanName}</b> đến phụ huynh không?</p>
             {notifyMessage && <div style={{ color: notifyMessage.includes('thành công') ? 'green' : 'red', marginBottom: 8 }}>{notifyMessage}</div>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="cancel-btn" onClick={() => setShowConfirmModal(false)} disabled={notifyLoading}>Hủy</button>
+              <button className="cancel-btn" role="button" aria-label="Hủy" onClick={() => setShowConfirmModal(false)} disabled={notifyLoading}>Hủy</button>
               <button className="submit-btn" onClick={handleSendNotificationsConfirmed} disabled={notifyLoading}>
                 {notifyLoading ? 'Đang gửi...' : 'Xác nhận'}
               </button>
@@ -931,8 +960,6 @@ const VaccinationManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Modal thêm vaccine */}
       {showAddVaccineModal && (
         <div className="modal-overlay">
           <div className="create-plan-modal" style={{ background: '#f4f8fb', minWidth: 400 }}>
@@ -945,33 +972,37 @@ const VaccinationManagement = () => {
             <form onSubmit={handleAddVaccine}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Tên vaccine:</label>
+                  <label htmlFor="addVaccineName">Tên vaccine:</label>
                   <input
+                    id="addVaccineName"
                     type="text"
                     name="VaccineName"
                     value={addVaccineData.VaccineName}
                     onChange={handleAddVaccineInputChange}
                     required
                     style={{ width: '100%', padding: 8, marginBottom: 12 }}
+                    aria-label="Tên vaccine:"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Mô tả:</label>
+                  <label htmlFor="addVaccineDesc">Mô tả:</label>
                   <textarea
+                    id="addVaccineDesc"
                     name="Description"
                     value={addVaccineData.Description}
                     onChange={handleAddVaccineInputChange}
                     rows={3}
                     style={{ width: '100%', padding: 8 }}
                     required
+                    aria-label="Mô tả:"
                   />
                 </div>
               </div>
               <div className="modal-footer" style={{ textAlign: 'right' }}>
-                <button type="button" className="close-btn" onClick={() => setShowAddVaccineModal(false)} style={{ marginRight: 8 }}>
+                <button type="button" className="close-btn" role="button" aria-label="Hủy" onClick={() => setShowAddVaccineModal(false)} style={{ marginRight: 8 }}>
                   Hủy
                 </button>
-                <button type="submit" className="create-plan-btn" disabled={addVaccineLoading}>
+                <button type="submit" className="create-plan-btn" role="button" aria-label="Thêm mới" disabled={addVaccineLoading}>
                   {addVaccineLoading ? 'Đang lưu...' : 'Xác nhận'}
                 </button>
               </div>
@@ -979,104 +1010,29 @@ const VaccinationManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Modal quản lý vaccine */}
-      {showVaccineManager && (
-        <div className="modal-overlay">
-          <div className="create-plan-modal" style={{ background: '#f4f8fb', minWidth: 600, maxWidth: 800 }}>
-            <div className="modal-header">
-              <h3>Quản lý vaccine</h3>
-              <button className="close-btn" onClick={closeVaccineManager}>
-                <i className="fas fa-times"></i>
+      {showDateErrorModal && (
+        <div className="modal-overlay" style={{ zIndex: 10001, background: 'rgba(0,0,0,0.25)' }}>
+          <div style={{
+            background: '#fff',
+            minWidth: 340,
+            maxWidth: 400,
+            margin: '120px auto',
+            borderRadius: 12,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+            padding: 32,
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 16, color: '#e53e3e' }}>Lỗi ngày dự kiến</div>
+            <div style={{ marginBottom: 24 }}>{dateErrorMessage}</div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+              <button className="close-btn" role="button" aria-label="Đóng" style={{ padding: '8px 24px', borderRadius: 6 }} onClick={() => setShowDateErrorModal(false)}>
+                Đóng
               </button>
             </div>
-            <div className="modal-body">
-              {/* Form thêm vaccine mới */}
-              <form onSubmit={handleAddVaccine} style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontWeight: 500 }}>Tên vaccine:</label>
-                  <input
-                    type="text"
-                    name="VaccineName"
-                    value={addVaccineData.VaccineName}
-                    onChange={handleAddVaccineInputChange}
-                    required
-                    style={{ width: '100%', padding: 8, marginBottom: 0 }}
-                  />
                 </div>
-                <div style={{ flex: 2 }}>
-                  <label style={{ fontWeight: 500 }}>Mô tả:</label>
-                  <input
-                    type="text"
-                    name="Description"
-                    value={addVaccineData.Description}
-                    onChange={handleAddVaccineInputChange}
-                    style={{ width: '100%', padding: 8, marginBottom: 0 }}
-                    required
-                  />
                 </div>
-                <button type="submit" className="create-plan-btn" disabled={addVaccineLoading} style={{ minWidth: 120 }}>
-                  {addVaccineLoading ? 'Đang lưu...' : 'Thêm mới'}
-                </button>
-              </form>
-              {/* Danh sách vaccine */}
-              <table style={{ width: '100%', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                <thead style={{ background: '#e2e8f0' }}>
-                  <tr>
-                    <th style={{ padding: 8 }}>Mã</th>
-                    <th style={{ padding: 8 }}>Tên vaccine</th>
-                    <th style={{ padding: 8 }}>Mô tả</th>
-                    <th style={{ padding: 8, minWidth: 120 }}>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vaccineList.map(v => (
-                    <tr key={v.vaccinationID || v.VaccinationID}>
-                      <td style={{ padding: 8 }}>{v.vaccinationID || v.VaccinationID}</td>
-                      <td style={{ padding: 8 }}>
-                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
-                          <input
-                            type="text"
-                            name="VaccineName"
-                            value={editVaccineData.VaccineName}
-                            onChange={handleEditVaccineInputChange}
-                            style={{ width: '100%', padding: 4 }}
-                          />
-                        ) : (v.vaccineName || v.VaccineName)}
-                      </td>
-                      <td style={{ padding: 8 }}>
-                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
-                          <input
-                            type="text"
-                            name="Description"
-                            value={editVaccineData.Description}
-                            onChange={handleEditVaccineInputChange}
-                            style={{ width: '100%', padding: 4 }}
-                          />
-                        ) : (v.description || v.Description)}
-                      </td>
-                      <td style={{ padding: 8, display: 'flex', gap: 8 }}>
-                        {editVaccineId === (v.vaccinationID || v.VaccinationID) ? (
-                          <>
-                            <button className="create-plan-btn" style={{ padding: '4px 12px' }} onClick={() => handleEditVaccineSave(v.vaccinationID || v.VaccinationID)}>Lưu</button>
-                            <button className="close-btn" style={{ padding: '4px 12px' }} onClick={() => setEditVaccineId(null)}>Hủy</button>
-                          </>
-                        ) : (
-                          <>
-                            <button className="edit-btn" style={{ padding: '4px 12px' }} onClick={() => handleEditVaccineClick(v)}>Sửa</button>
-                            <button className="delete-btn" style={{ padding: '4px 12px', background: '#e53e3e', color: '#fff' }} onClick={() => setDeleteVaccineId(v.vaccinationID || v.VaccinationID)}>Xóa</button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       )}
-      {/* Modal xác nhận xóa vaccine */}
       {deleteVaccineId && (
         <div className="modal-overlay" style={{ zIndex: 10001, background: 'rgba(0,0,0,0.25)' }}>
           <div style={{
@@ -1094,7 +1050,7 @@ const VaccinationManagement = () => {
             <div style={{ marginBottom: 24 }}>Bạn có chắc chắn muốn xóa vaccine này không?</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
               <button className="delete-btn" style={{ background: '#e53e3e', color: '#fff', padding: '8px 24px', borderRadius: 6 }} onClick={() => handleDeleteVaccine(deleteVaccineId)} disabled={deleteLoading}>Xóa</button>
-              <button className="close-btn" style={{ padding: '8px 24px', borderRadius: 6 }} onClick={() => setDeleteVaccineId(null)}>Hủy</button>
+              <button className="close-btn" role="button" aria-label="Hủy" style={{ padding: '8px 24px', borderRadius: 6 }} onClick={() => setDeleteVaccineId(null)}>Hủy</button>
             </div>
           </div>
         </div>
@@ -1116,25 +1072,24 @@ const VaccinationManagement = () => {
           {notifyMessage}
         </div>
       )}
-      {showDateErrorModal && (
-        <div className="modal-overlay" style={{ zIndex: 10001, background: 'rgba(0,0,0,0.25)' }}>
-          <div style={{
-            background: '#fff',
-            minWidth: 340,
-            maxWidth: 400,
-            margin: '120px auto',
-            borderRadius: 12,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
-            padding: 32,
-            textAlign: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 16, color: '#e53e3e' }}>Lỗi ngày dự kiến</div>
-            <div style={{ marginBottom: 24 }}>{dateErrorMessage}</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-              <button className="close-btn" style={{ padding: '8px 24px', borderRadius: 6 }} onClick={() => setShowDateErrorModal(false)}>Đóng</button>
-            </div>
-          </div>
+      {/* Thông báo lỗi toàn cục */}
+      {formError === 'date' && (
+        <div data-testid="global-date-error" style={{ color: 'red', marginBottom: 8 }}>
+          <div>Lỗi ngày dự kiến</div>
+          <div>Ngày dự kiến phải lớn hơn hoặc bằng hôm nay!</div>
+        </div>
+      )}
+      {formError === 'login' && (
+        <div data-testid="global-login-error" style={{ color: 'red', marginBottom: 8 }}>
+          Vui lòng đăng nhập để thực hiện chức năng này.
+        </div>
+      )}
+      {formError && formError !== 'date' && formError !== 'login' && (
+        <div data-testid="global-form-error" style={{ color: 'red', marginBottom: 8 }}>{formError}</div>
+      )}
+      {vaccineError && (
+        <div data-testid="global-vaccine-error" style={{ color: 'red', marginBottom: 8 }}>
+          {vaccineError}
         </div>
       )}
     </div>
