@@ -114,7 +114,7 @@ namespace BackEnd.Controllers
             return Ok(new { message = "Consent form approved!" });
         }
 
-        public class DenyModel { public string? Reason { get; set; } }
+        public class DenyModel { public string Reason { get; set; } }
 
         [HttpPost("{id}/deny")]
         public async Task<IActionResult> DenyConsentForm(string id, [FromBody] DenyModel model)

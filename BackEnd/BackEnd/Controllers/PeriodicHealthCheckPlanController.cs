@@ -155,6 +155,29 @@ namespace BackEnd.Controllers
                         ConsentFormID = consentForm.ID // Gán ID của consent form
                     };
                     await _notificationService.CreateNotificationAsync(notification);
+
+                    // Gửi email cho phụ huynh
+                    var parentProfile = dbContext.Profiles.FirstOrDefault(p => p.UserID == record.ParentID);
+                    var studentProfile = dbContext.Profiles.FirstOrDefault(p => p.UserID == record.StudentID);
+                    var schoolClass = dbContext.SchoolClasses.FirstOrDefault(c => c.ClassID == plan.ClassID);
+                    var parentEmail = parentProfile?.Email;
+                    var studentName = studentProfile?.Name ?? record.StudentID;
+                    var className = schoolClass?.ClassName ?? plan.ClassID;
+                    var dateTime = plan.ScheduleDate.HasValue ? plan.ScheduleDate.Value.ToString("dd/MM/yyyy") : "(vui lòng xem chi tiết trên hệ thống)";
+                    var location = "Phòng Y tế trường";
+                    var registrationLink = "http://localhost:3000/";
+                    if (!string.IsNullOrEmpty(parentEmail))
+                    {
+                        var gmailService = new GmailEmailService("credentials/credentials.json", "token.json");
+                        await gmailService.SendHealthCheckRegistrationNotificationAsync(
+                            parentEmail,
+                            studentName,
+                            className,
+                            dateTime,
+                            location,
+                            registrationLink
+                        );
+                    }
                 }
             }
             return Ok(new { message = "Notifications sent!" });
