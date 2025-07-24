@@ -7,7 +7,9 @@
 ### 1.1. Cài đặt các package cần thiết
 Mở PowerShell tại thư mục gốc dự án (chứa package.json), chạy:
 ```powershell
-npm install --save-dev jest @testing-library/react @testing-library/jest-dom babel-jest @babel/preset-env @babel/preset-react identity-obj-proxy
+
+npm install --save-dev jest @testing-library/react @testing-library/jest-dom babel-jest @babel/preset-env @babel/preset-react identity-obj-proxy @testing-library/user-event
+
 ```
 
 
@@ -18,8 +20,6 @@ Tạo file `.babelrc` ở thư mục gốc (cùng cấp package.json) với nộ
   "presets": ["@babel/preset-env", "@babel/preset-react"]
 }
 ```
-
-
 
 ### 1.3. Tạo file cấu hình Jest
 Tạo file `jest.config.js` ở thư mục gốc với nội dung:
@@ -52,16 +52,6 @@ import '@testing-library/jest-dom';
 ```
 
 Nhờ đó, bạn có thể sử dụng các matcher như `toBeRequired`, `toBeInTheDocument`,... trong mọi file test mà không cần import lại từng file.
-
-### 1.5. Xóa node_modules nếu gặp lỗi
-Trên Windows PowerShell:
-```powershell
-Remove-Item -Recurse -Force node_modules
-Remove-Item -Recurse -Force package-lock.json
-npm install
-```
-
-
 
 
 
