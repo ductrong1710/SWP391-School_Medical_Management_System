@@ -8,9 +8,10 @@ module.exports = {
     '^.+\\.[jt]sx?$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!axios)"
+    '/node_modules/(?!axios)'
   ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
 };

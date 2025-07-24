@@ -780,7 +780,9 @@ const HealthCheckManagement = () => {
   const fetchResultForConsent = async (consentId) => {
     try {
       const res = await apiClient.get(`/HealthCheckResult/consent/${consentId}`);
-      setHealthCheckResults(prev => ({ ...prev, [consentId]: res.data }));
+      // Nếu API trả về mảng, lấy phần tử đầu tiên; nếu không, giữ nguyên
+      const resultObj = Array.isArray(res.data) ? (res.data[0] || null) : res.data;
+      setHealthCheckResults(prev => ({ ...prev, [consentId]: resultObj }));
     } catch {
       setHealthCheckResults(prev => ({ ...prev, [consentId]: null }));
     }
@@ -1450,7 +1452,7 @@ const HealthCheckManagement = () => {
                             form.status === 'Từ chối' ||
                             form.consent_status === 'Từ chối'
                           );
-                          const result = healthCheckResults[form.id];
+                          const result = healthCheckResults[form.id] || healthCheckResults[form.consentFormId] || healthCheckResults[form.studentId];
                           // Chỉ coi là đã có kết quả nếu result là object và có ít nhất 1 trường dữ liệu
                           const hasResult = result && (typeof result === 'object') && Object.keys(result).length > 0;
                           const isWaiting = isApproved && !hasResult;
@@ -1461,13 +1463,13 @@ const HealthCheckManagement = () => {
                             <tr key={form.studentID}>
                               <td style={{textAlign: 'center'}}>{idx + 1}</td>
                               <td>{form.studentID}</td>
-                              <td>{studentNames[form.studentID] || form.studentID}</td>
+                              <td>{form.name || studentNames[form.studentID] || form.studentID}</td>
                               <td>{getConsentStatusText(form.consentStatus || form.status || form.consent_status, form.statusID)}</td>
                               <td>
                                 {/* Đã đồng ý và đã có kết quả */}
                                 {isApproved && hasResult && (
-                                  <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'result', data: result, student: studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
-                                    {result.Conclusion || 'Đã nhập'}
+                                  <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'result', data: result, student: form.name || studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
+                                    Đã nhập
                                   </button>
                                 )}
                                 {/* Đã đồng ý, chưa có kết quả, có quyền nhập kết quả */}
@@ -1488,7 +1490,7 @@ const HealthCheckManagement = () => {
                                 {/* Đã từ chối */}
                                 {isDenied && (
                                   <>
-                                    <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'reason', data: form.reasonForDenial || 'Không có lý do', student: studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
+                                    <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'reason', data: form.reasonForDenial || 'Không có lý do', student: form.name || studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
                                       Xem lý do
                                     </button>
                                   </>

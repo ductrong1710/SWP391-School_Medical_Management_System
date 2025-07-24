@@ -3,18 +3,23 @@
 ## 1. Cài đặt môi trường test
 
 
+
 ### 1.1. Cài đặt các package cần thiết
-```bash
+Mở PowerShell tại thư mục gốc dự án (chứa package.json), chạy:
+```powershell
 npm install --save-dev jest @testing-library/react @testing-library/jest-dom babel-jest @babel/preset-env @babel/preset-react identity-obj-proxy
 ```
 
+
 ### 1.2. Tạo file cấu hình Babel
-Tạo file `.babelrc` ở thư mục gốc với nội dung:
+Tạo file `.babelrc` ở thư mục gốc (cùng cấp package.json) với nội dung:
 ```json
 {
   "presets": ["@babel/preset-env", "@babel/preset-react"]
 }
 ```
+
+
 
 ### 1.3. Tạo file cấu hình Jest
 Tạo file `jest.config.js` ở thư mục gốc với nội dung:
@@ -29,34 +34,51 @@ module.exports = {
     '^.+\\.[jt]sx?$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!axios)"
+    '/node_modules/(?!axios)'
   ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
+  // Thêm dòng này để tự động import jest-dom cho toàn bộ test
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
 };
 ```
 
-### 1.4. Xóa node_modules nếu gặp lỗi
+### 1.4. Tạo file cấu hình matcher cho Jest (bắt buộc)
+Tạo file `src/setupTests.js` với nội dung:
+```js
+// Import jest-dom để có các matcher như toBeRequired, toBeInTheDocument, v.v.
+import '@testing-library/jest-dom';
+```
+
+Nhờ đó, bạn có thể sử dụng các matcher như `toBeRequired`, `toBeInTheDocument`,... trong mọi file test mà không cần import lại từng file.
+
+### 1.5. Xóa node_modules nếu gặp lỗi
 Trên Windows PowerShell:
 ```powershell
 Remove-Item -Recurse -Force node_modules
+Remove-Item -Recurse -Force package-lock.json
 npm install
 ```
 
+
+
+
+
 ## 2. Cấu trúc file test
 - Đặt file test cùng thư mục với component hoặc page, tên file có dạng: `TênComponent.test.js`
-- Ví dụ: `src/pages/HealthCheckManagement.test.js`
+- Ví dụ: `src/Test/HealthCheckResultForm.test.js`
+
 
 ## 3. Chạy unit test
 
 Chạy toàn bộ test:
-```bash
+```powershell
 npm test
 ```
 
 Hoặc để xem báo cáo coverage:
-```bash
+```powershell
 npm test -- --coverage
 ```
 
@@ -80,20 +102,19 @@ test('renders button', () => {
 ## 6. Một số lệnh hữu ích
 - Chạy test một file cụ thể:
 
+
   **Cách 1: Dùng npm test với đường dẫn file**
-  ```bash
-  npm test src/pages/HealthCheckManagement.test.js
-  npm test src/components/HealthCheckResultForm.test.js
+  ```powershell
+  npm test src/Test/HealthCheckResultForm.test.js
   ```
 
   **Cách 2: Dùng npx jest với đường dẫn file**
-  ```bash
-  npx jest src/pages/HealthCheckManagement.test.js
-  npx jest src/components/HealthCheckResultForm.test.js
+  ```powershell
+  npx jest src/Test/HealthCheckResultForm.test.js
   ```
 
   **Cách 3: Dùng pattern tên file (chạy các file có tên chứa chuỗi đó)**
-  ```bash
+  ```powershell
   npm test -- HealthCheckResultForm
   npx jest HealthCheckResultForm
   ```
@@ -102,11 +123,12 @@ test('renders button', () => {
   - Click chuột phải vào file test → Chọn "Run Jest" hoặc "Run Test".
 
 - Xem chi tiết coverage:
-  ```bash
+
+  ```powershell
   npx jest --coverage
   ```
-- Chạy test với cấu hình cụ thể:
-  ```bash
+  Chạy test với cấu hình cụ thể:
+  ```powershell
   npx jest --coverage --config jest.config.js
   ```
 
