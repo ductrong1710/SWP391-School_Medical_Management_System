@@ -31,7 +31,7 @@ const HealthCheck = () => {
   }
 
   if (error) {
-    return <div className="health-check-container error" data-testid="healthcheck-list-error">{error}</div>;
+    return <div className="health-check-container error">{error}</div>;
   }
 
   return (
@@ -55,9 +55,9 @@ const HealthCheck = () => {
                 <span><b>Trạng thái:</b> {check.status}</span>
               </div>
               <div className="plan-actions">
-                <button className="btn-view" data-testid={`view-btn-${check.id}`}><i className="fa fa-eye" /> Xem</button>
-                <button className="btn-edit" data-testid={`edit-btn-${check.id}`}><i className="fa fa-edit" /> Sửa</button>
-                <button className="btn-notify" data-testid={`notify-btn-${check.id}`}><i className="fa fa-bell" /> Gửi thông báo</button>
+                <button className="btn-view"><i className="fa fa-eye" /> Xem</button>
+                <button className="btn-edit"><i className="fa fa-edit" /> Sửa</button>
+                <button className="btn-notify"><i className="fa fa-bell" /> Gửi thông báo</button>
               </div>
             </div>
           ))}

@@ -225,8 +225,9 @@ const VaccinationPlanRecord = () => {
                     <h3 style={{ color: 'var(--primary-blue)', marginBottom: 16 }}>Ghi nhận kết quả tiêm chủng</h3>
                     <form onSubmit={handleSubmit}>
                       <div className="form-group mb-3">
-                        <label>Loại vaccine</label>
+                        <label htmlFor="vaccineTypeInput">Loại vaccine</label>
                         <input
+                          id="vaccineTypeInput"
                           type="text"
                           className="form-control"
                           value={
@@ -240,24 +241,24 @@ const VaccinationPlanRecord = () => {
                         />
                       </div>
                       <div className="form-group mb-3">
-                        <label>Ngày tiêm thực tế</label>
-                        <input type="date" name="actualVaccinationDate" className="form-control" value={form.actualVaccinationDate} onChange={handleChange} required />
+                        <label htmlFor="actualVaccinationDateInput">Ngày tiêm thực tế</label>
+                        <input id="actualVaccinationDateInput" type="date" name="actualVaccinationDate" className="form-control" value={form.actualVaccinationDate} onChange={handleChange} required />
                       </div>
                       <div className="form-group mb-3">
-                        <label>Người thực hiện</label>
-                        <input type="text" name="performer" className="form-control" value={form.performer} onChange={handleChange} required disabled />
+                        <label htmlFor="performerInput">Người thực hiện</label>
+                        <input id="performerInput" type="text" name="performer" className="form-control" value={form.performer} onChange={handleChange} required disabled />
                       </div>
                       <div className="form-group mb-3">
-                        <label>Phản ứng sau tiêm</label>
-                        <input type="text" name="postVaccinationReaction" className="form-control" value={form.postVaccinationReaction} onChange={handleChange} />
+                        <label htmlFor="postVaccinationReactionInput">Phản ứng sau tiêm</label>
+                        <input id="postVaccinationReactionInput" type="text" name="postVaccinationReaction" className="form-control" value={form.postVaccinationReaction} onChange={handleChange} />
                       </div>
                       <div className="form-group mb-3">
-                        <label>Ghi chú</label>
-                        <input type="text" name="notes" className="form-control" value={form.notes} onChange={handleChange} />
+                        <label htmlFor="notesInput">Ghi chú</label>
+                        <input id="notesInput" type="text" name="notes" className="form-control" value={form.notes} onChange={handleChange} />
                       </div>
                       <div className="form-group mb-3">
-                        <label>
-                          <input type="checkbox" name="needToContactParent" checked={form.needToContactParent} onChange={handleChange} style={{ marginRight: 8 }} />
+                        <label htmlFor="needToContactParentInput">
+                          <input id="needToContactParentInput" type="checkbox" name="needToContactParent" checked={form.needToContactParent} onChange={handleChange} style={{ marginRight: 8 }} />
                           Cần liên hệ phụ huynh
                         </label>
                       </div>

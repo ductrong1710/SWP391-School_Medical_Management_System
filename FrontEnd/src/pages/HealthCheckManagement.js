@@ -980,10 +980,10 @@ const HealthCheckManagement = () => {
                         <b>Nội dung:</b> {'Khám sức khỏe định kỳ'}
                       </div>
                       <div className="plan-actions mt-2">
-                        <button className="btn btn-info btn-sm me-2" onClick={() => handleViewDetails(plan)} data-testid={`view-detail-btn-${plan.id}`}>
+                        <button className="btn btn-info btn-sm me-2" onClick={() => handleViewDetails(plan)}>
                           <i className="fas fa-eye"></i> Xem
                         </button>
-                        <button className="btn btn-secondary btn-sm me-2" onClick={() => handleEditHealthCheck(plan)} data-testid={`edit-plan-btn-${plan.id}`}>
+                        <button className="btn btn-secondary btn-sm me-2" onClick={() => handleEditHealthCheck(plan)}>
                           <i className="fas fa-edit"></i> Sửa
                         </button>
                         {plan.status === 'Đã lên lịch' && (
@@ -1005,7 +1005,7 @@ const HealthCheckManagement = () => {
           </div>
         )}        {/* Chi tiết lịch khám sức khỏe */}
         {selectedHealthCheck && (
-          <div className="modal show d-block" tabIndex="-1" onClick={handleCloseDetails} data-testid="plan-detail-modal">
+          <div className="modal show d-block" tabIndex="-1" onClick={handleCloseDetails}>
             <div className="modal-dialog" onClick={e => e.stopPropagation()}>
               <div className="modal-content">
                 <div className="modal-header">
@@ -1069,7 +1069,7 @@ const HealthCheckManagement = () => {
                   <div className="detail-section mb-3">
                     <h4><i className="fas fa-list"></i> Danh sách học sinh</h4>
                     <div className="mb-3 d-flex justify-content-end">
-                      <button className="btn btn-outline-primary btn-sm" onClick={() => setShowStudentListModal(true)} data-testid="view-student-list-btn">
+                      <button className="btn btn-outline-primary btn-sm" onClick={() => setShowStudentListModal(true)}>
                         <i className="fas fa-list"></i> Xem danh sách học sinh
                       </button>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
                     </div>
@@ -1081,13 +1081,12 @@ const HealthCheckManagement = () => {
               </div>
             </div>
           </div>
-        )}        {/* Form tạo lịch khám sức khỏe mới */}        
-        {showForm && (
-  <div className="modal show d-block" tabIndex="-1" data-testid="edit-plan-modal">
-    <div className="modal-dialog modal-lg">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h5 className="modal-title" data-testid="edit-plan-title">{editingHealthCheckId ? 'Cập nhật thông tin khám sức khỏe' : 'Tạo lịch khám sức khỏe học đường mới'}</h5>
+        )}        {/* Form tạo lịch khám sức khỏe mới */}        {showForm && (
+          <div className="modal show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-lg">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">{editingHealthCheckId ? 'Cập nhật thông tin khám sức khỏe' : 'Tạo lịch khám sức khỏe học đường mới'}</h5>
                   <button type="button" className="btn-close" onClick={handleCancelForm}></button>
                 </div>
                 <div className="modal-body">
@@ -1413,7 +1412,7 @@ const HealthCheckManagement = () => {
           </div>
         )}
         {showStudentListModal && (
-          <div className="modal show d-block" tabIndex="-1" style={{background: 'rgba(0,0,0,0.7)'}} data-testid="student-list-modal">
+          <div className="modal show d-block" tabIndex="-1" style={{background: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-fullscreen">
               <div className="modal-content">
                 <div className="modal-header" style={{justifyContent: 'center'}}>
@@ -1437,26 +1436,13 @@ const HealthCheckManagement = () => {
                           <tr><td colSpan="5" className="text-center">Không có học sinh nào.</td></tr>
                         )}
                         {consentForms.map((form, idx) => {
-                          // Tách logic điều kiện rõ ràng hơn
-                          const isApproved = (
-                            form.statusID === 1 ||
-                            form.consentStatus === 'Đồng ý' ||
-                            form.status === 'Đồng ý' ||
-                            form.consent_status === 'Đồng ý'
-                          );
-                          const isDenied = (
-                            form.statusID === 2 ||
-                            form.consentStatus === 'Từ chối' ||
-                            form.status === 'Từ chối' ||
-                            form.consent_status === 'Từ chối'
-                          );
+                          // Sửa lại điều kiện isApproved để nhận giá trị từ StatusID hoặc các key khác
+                          const isApproved = form.statusID === 1 || form.consentStatus === 'Đồng ý' || form.status === 'Đồng ý' || form.consent_status === 'Đồng ý';
+                          const isDenied = form.statusID === 2 || form.consentStatus === 'Từ chối' || form.status === 'Từ chối' || form.consent_status === 'Từ chối';
                           const result = healthCheckResults[form.id];
-                          // Chỉ coi là đã có kết quả nếu result là object và có ít nhất 1 trường dữ liệu
-                          const hasResult = result && (typeof result === 'object') && Object.keys(result).length > 0;
-                          const isWaiting = isApproved && !hasResult;
-                          const canEditResult = currentUser?.roleType === 'MedicalStaff' || currentUser?.roleType === 'Admin';
-                          // Log rõ ràng để debug
-                          // console.log({studentID: form.studentID, isApproved, isDenied, hasResult, isWaiting, canEditResult, result});
+                          const isWaiting = isApproved && !result;
+                          const canEditResult = (currentUser?.roleType === 'MedicalStaff' || currentUser?.roleType === 'Admin');
+                          console.log('form:', form, 'isApproved:', isApproved, 'result:', result, 'isWaiting:', isWaiting, 'canEditResult:', canEditResult);
                           return (
                             <tr key={form.studentID}>
                               <td style={{textAlign: 'center'}}>{idx + 1}</td>
@@ -1464,28 +1450,23 @@ const HealthCheckManagement = () => {
                               <td>{studentNames[form.studentID] || form.studentID}</td>
                               <td>{getConsentStatusText(form.consentStatus || form.status || form.consent_status, form.statusID)}</td>
                               <td>
-                                {/* Đã đồng ý và đã có kết quả */}
-                                {isApproved && hasResult && (
+                                {isApproved && result && (
                                   <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'result', data: result, student: studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
                                     {result.Conclusion || 'Đã nhập'}
                                   </button>
                                 )}
-                                {/* Đã đồng ý, chưa có kết quả, có quyền nhập kết quả */}
-                                {isWaiting && canEditResult && (
+                                {isWaiting && (
                                   <button
                                     className="btn btn-link btn-sm text-warning p-0"
                                     style={{zIndex: 9999, pointerEvents: 'auto'}}
-                                    data-testid={`update-result-btn-${form.studentID || form.id}`}
                                     onClick={() => handleOpenResultModal(form)}
                                   >
                                     Đang đợi kết quả (Nhập kết quả)
                                   </button>
                                 )}
-                                {/* Đã đồng ý, chưa có kết quả, KHÔNG có quyền nhập kết quả */}
                                 {isWaiting && !canEditResult && (
                                   <span className="text-warning">Đang đợi kết quả</span>
                                 )}
-                                {/* Đã từ chối */}
                                 {isDenied && (
                                   <>
                                     <button className="btn btn-link btn-sm p-0" onClick={() => { setDetailModalContent({ type: 'reason', data: form.reasonForDenial || 'Không có lý do', student: studentNames[form.studentID] || form.studentID }); setShowDetailModal(true); }}>
@@ -1493,7 +1474,6 @@ const HealthCheckManagement = () => {
                                     </button>
                                   </>
                                 )}
-                                {/* Chờ phản hồi */}
                                 {!isApproved && !isDenied && (
                                   <span className="text-secondary">Chờ phản hồi</span>
                                 )}
@@ -1556,22 +1536,17 @@ const HealthCheckManagement = () => {
           </div>
         )}
         {showResultModal && (
-          <div data-testid="result-input-modal">
-            <HealthCheckResultForm
-              consentFormId={resultForm.consentId}
-              checkUpType={resultForm.CheckupType}
-              checker={currentUser?.username || ''}
-              existingResult={healthCheckResults[resultForm.consentId] || null}
-              onSuccess={() => {
-                setShowResultModal(false);
-                fetchResultForConsent(resultForm.consentId);
-              }}
-              onCancel={() => setShowResultModal(false)}
-            />
-          </div>
-        )}
-        {showError && (
-          <div data-testid="healthcheck-error" className="error-message">{error}</div>
+          <HealthCheckResultForm
+            consentFormId={resultForm.consentId}
+            checkUpType={resultForm.CheckupType}
+            checker={currentUser?.username || ''}
+            existingResult={healthCheckResults[resultForm.consentId] || null}
+            onSuccess={() => {
+              setShowResultModal(false);
+              fetchResultForConsent(resultForm.consentId);
+            }}
+            onCancel={() => setShowResultModal(false)}
+          />
         )}
         <ErrorDialog open={showError} message={error} onClose={() => setShowError(false)} type={errorType} />
         {/* Dialog xác nhận gửi thông báo */}
@@ -1624,13 +1599,6 @@ function ApprovedStudentsList({ planId }) {
       </tbody>
     </table>
   );
-}
-
-function canShowUpdateResultBtn(form, result, currentUser) {
-  const isApproved = form.statusID === 1 || form.consentStatus === 'Đồng ý' || form.status === 'Đồng ý' || form.consent_status === 'Đồng ý';
-  const resultExists = !!result;
-  const canEdit = currentUser?.roleType === 'MedicalStaff' || currentUser?.roleType === 'Admin';
-  return isApproved && !resultExists && canEdit;
 }
 
 export default HealthCheckManagement;

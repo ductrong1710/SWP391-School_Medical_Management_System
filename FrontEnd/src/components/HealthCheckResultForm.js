@@ -7,7 +7,7 @@ function generateId() {
   return 'HR' + Math.floor(1000 + Math.random() * 9000);
 }
 
-function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCancel, checkUpType, checker, disableRequired = false }) {
+function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCancel, checkUpType, checker }) {
   // Lấy ngày hiện tại yyyy-MM-dd
   const today = new Date().toISOString().split('T')[0];
   const defaultResult = {
@@ -33,7 +33,6 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
     ...existingResult
   });
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     setResultData(prev => ({
@@ -57,7 +56,6 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setErrorMsg('');
     
     // Generate ID for new records
     const recordId = existingResult && (existingResult.ID || existingResult.id) 
@@ -107,9 +105,9 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
               ? error.response.data 
               : JSON.stringify(error.response.data))
           : `HTTP ${error.response.status}: ${error.response.statusText}`;
-        setErrorMsg('Lỗi lưu kết quả: ' + errorMessage);
+        alert('Lỗi lưu kết quả: ' + errorMessage);
       } else {
-        setErrorMsg('Lỗi không xác định: ' + error.message);
+        alert('Lỗi không xác định: ' + error.message);
       }
       return;
     } finally {
@@ -121,7 +119,6 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
     <div className="modal-overlay result-modal">
       <div className="modal-content">
         <div className="modal-title">NHẬP KẾT QUẢ KHÁM SỨC KHỎE</div>
-        {errorMsg && <div data-testid="result-form-error" className="error-message">{errorMsg}</div>}
         <form onSubmit={handleSubmit} className="health-check-result-form center-form">
           <table className="result-table">
             <tbody>
@@ -129,55 +126,55 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
                 <td className="label-cell">
                   <label htmlFor="height">Chiều cao (cm) <span className="required-star">*</span></label>
                 </td>
-                <td><input id="height" type="number" name="height" value={resultData.height} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="height" type="number" name="height" value={resultData.height} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="weight">Cân nặng (kg) <span className="required-star">*</span></label>
                 </td>
-                <td><input id="weight" type="number" name="weight" value={resultData.weight} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="weight" type="number" name="weight" value={resultData.weight} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="bloodPressure">Huyết áp <span className="required-star">*</span></label>
                 </td>
-                <td><input id="bloodPressure" type="number" name="bloodPressure" value={resultData.bloodPressure} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="bloodPressure" type="number" name="bloodPressure" value={resultData.bloodPressure} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="heartRate">Nhịp tim <span className="required-star">*</span></label>
                 </td>
-                <td><input id="heartRate" type="number" name="heartRate" value={resultData.heartRate} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="heartRate" type="number" name="heartRate" value={resultData.heartRate} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="eyesight">Thị lực <span className="required-star">*</span></label>
                 </td>
-                <td><input id="eyesight" type="text" name="eyesight" value={resultData.eyesight} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="eyesight" type="text" name="eyesight" value={resultData.eyesight} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="hearing">Thính lực <span className="required-star">*</span></label>
                 </td>
-                <td><input id="hearing" type="text" name="hearing" value={resultData.hearing} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="hearing" type="text" name="hearing" value={resultData.hearing} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="oralHealth">Răng miệng <span className="required-star">*</span></label>
                 </td>
-                <td><input id="oralHealth" type="text" name="oralHealth" value={resultData.oralHealth} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="oralHealth" type="text" name="oralHealth" value={resultData.oralHealth} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="spine">Cột sống <span className="required-star">*</span></label>
                 </td>
-                <td><input id="spine" type="text" name="spine" value={resultData.spine} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="spine" type="text" name="spine" value={resultData.spine} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
                   <label htmlFor="conclusion">Kết luận <span className="required-star">*</span></label>
                 </td>
-                <td><input id="conclusion" type="text" name="conclusion" value={resultData.conclusion} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="conclusion" type="text" name="conclusion" value={resultData.conclusion} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
@@ -189,7 +186,7 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
                 <td className="label-cell">
                   <label htmlFor="checker">Người khám <span className="required-star">*</span></label>
                 </td>
-                <td><input id="checker" type="text" name="checker" value={resultData.checker} onChange={handleInputChange} className="input-cell" required={!disableRequired} /></td>
+                <td><input id="checker" type="text" name="checker" value={resultData.checker} onChange={handleInputChange} className="input-cell" required /></td>
               </tr>
               <tr>
                 <td className="label-cell">
@@ -226,8 +223,8 @@ function HealthCheckResultForm({ consentFormId, existingResult, onSuccess, onCan
             </tbody>
           </table>
           <div className="modal-actions center-actions">
-            <button type="submit" className="submit-btn" data-testid="submit-result-btn">Lưu kết quả</button>
-            <button type="button" className="cancel-btn" onClick={onCancel} data-testid="cancel-result-btn">Hủy</button>
+            <button type="submit" className="submit-btn">Lưu kết quả</button>
+            <button type="button" className="cancel-btn" onClick={onCancel}>Hủy</button>
           </div>
         </form>
       </div>

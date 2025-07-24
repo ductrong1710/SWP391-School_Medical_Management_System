@@ -80,27 +80,10 @@ test('renders button', () => {
 ## 6. Một số lệnh hữu ích
 - Chạy test một file cụ thể:
 
-  **Cách 1: Dùng npm test với đường dẫn file**
-  ```bash
-  npm test src/pages/HealthCheckManagement.test.js
-  npm test src/components/HealthCheckResultForm.test.js
-  ```
-
-  **Cách 2: Dùng npx jest với đường dẫn file**
+- Chạy test một file cụ thể:
   ```bash
   npx jest src/pages/HealthCheckManagement.test.js
-  npx jest src/components/HealthCheckResultForm.test.js
   ```
-
-  **Cách 3: Dùng pattern tên file (chạy các file có tên chứa chuỗi đó)**
-  ```bash
-  npm test -- HealthCheckResultForm
-  npx jest HealthCheckResultForm
-  ```
-
-  **Cách 4: Chạy test bằng giao diện VSCode (nếu cài extension Jest)**
-  - Click chuột phải vào file test → Chọn "Run Jest" hoặc "Run Test".
-
 - Xem chi tiết coverage:
   ```bash
   npx jest --coverage

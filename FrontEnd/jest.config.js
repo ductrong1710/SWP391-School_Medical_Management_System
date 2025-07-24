@@ -13,4 +13,10 @@ module.exports = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
+  collectCoverageFrom: [
+    "src/pages/VaccinationManagement.js",
+    "src/pages/VaccinationPlanRecord.js",
+    "src/pages/VaccinationPlanStudents.js",
+
+  ]
 };
